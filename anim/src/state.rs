@@ -108,7 +108,7 @@ impl State {
                 ..Default::default()
             });
             pass.set_pipeline(&self.render_pipeline);
-            pass.draw(0..3, 0..1);
+            pass.draw(0..6, 0..1);
         }
 
         self.queue.submit([encoder.finish()]);

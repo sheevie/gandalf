@@ -20,8 +20,9 @@ fn vs_main(@builtin(vertex_index) idx: u32) -> VertexOutput {
 
     var result: VertexOutput;
 
-    result.position = vec4f(positions[idx], 0.0, 1.0);
-    result.color = color[idx];
+    let i = select(idx, idx - 2, idx > 2);
+    result.position = vec4f(positions[i], 0.0, 1.0);
+    result.color = color[i];
 
     return result;
 }
