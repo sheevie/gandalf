@@ -95,7 +95,7 @@ impl State {
                 ops: wgpu::Operations {
                     load: (wgpu::LoadOp::Clear(wgpu::Color {
                         r: 0.2,
-                        g: 0.2,
+                        g: 0.3,
                         b: 0.2,
                         a: 1.0,
                     })),
