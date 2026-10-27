@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use wgpu::{
     InstanceDescriptor, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    wgc::device::queue,
+    util::DeviceExt,
     wgt::{CommandEncoderDescriptor, TextureViewDescriptor},
 };
 use winit::{event_loop::ActiveEventLoop, window::Window};
@@ -12,6 +12,18 @@ pub struct State {
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: RenderPipeline,
+}
+
+fn create_vertex_buffer() -> Vec<u8> {
+    const vertex: [[f32; 2]; 6] = [
+        [0.0, 1.0],
+        [1.0, 0.0],
+        [0.0, -1.0],
+        [0.0, -1.0],
+        [-1.0, 0.0],
+        [0.0, 1.0],
+    ];
+    return bytemuck::cast_slice::<[f32; 2], u8>(&vertex).to_vec();
 }
 
 impl State {
@@ -45,6 +57,24 @@ impl State {
             blend: Some(wgpu::BlendState::REPLACE),
             write_mask: wgpu::ColorWrites::ALL,
         })];
+
+        const vertex: [[f32; 2]; 6] = [
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [0.0, -1.0],
+            [0.0, -1.0],
+            [-1.0, 0.0],
+            [0.0, 1.0],
+        ];
+        let bytes = bytemuck::cast_slice::<[f32; 2], u8>(&vertex).to_vec();
+
+        // device.create_buffer_init(&wgpu::BufferInitDescriptor { label: "as" });
+        let desc = &BufferInitDescriptor {
+            label: Some("asdf"),
+            contents: bytes,
+            usage: wgpu::BufferUsages::VERTEX,
+        };
+        device.create_buffer_init(desc);
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pipeline"),
