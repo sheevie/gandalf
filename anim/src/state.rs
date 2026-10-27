@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use wgpu::{
-    InstanceDescriptor, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
-    util::DeviceExt,
+    Buffer, InstanceDescriptor, RenderPassColorAttachment, RenderPassDescriptor, RenderPipeline,
+    VertexAttribute, VertexBufferLayout,
+    util::{BufferInitDescriptor, DeviceExt},
     wgt::{CommandEncoderDescriptor, TextureViewDescriptor},
 };
 use winit::{event_loop::ActiveEventLoop, window::Window};
@@ -12,18 +13,7 @@ pub struct State {
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: RenderPipeline,
-}
-
-fn create_vertex_buffer() -> Vec<u8> {
-    const vertex: [[f32; 2]; 6] = [
-        [0.0, 1.0],
-        [1.0, 0.0],
-        [0.0, -1.0],
-        [0.0, -1.0],
-        [-1.0, 0.0],
-        [0.0, 1.0],
-    ];
-    return bytemuck::cast_slice::<[f32; 2], u8>(&vertex).to_vec();
+    buffer: Buffer,
 }
 
 impl State {
@@ -66,15 +56,15 @@ impl State {
             [-1.0, 0.0],
             [0.0, 1.0],
         ];
-        let bytes = bytemuck::cast_slice::<[f32; 2], u8>(&vertex).to_vec();
+        let bytes = bytemuck::cast_slice::<[f32; 2], u8>(&vertex);
 
         // device.create_buffer_init(&wgpu::BufferInitDescriptor { label: "as" });
         let desc = &BufferInitDescriptor {
-            label: Some("asdf"),
+            label: Some("vertices"),
             contents: bytes,
             usage: wgpu::BufferUsages::VERTEX,
         };
-        device.create_buffer_init(desc);
+        let buffer = device.create_buffer_init(desc);
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pipeline"),
@@ -82,7 +72,15 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[], // no vertex buffers yet
+                buffers: &[Some(VertexBufferLayout {
+                    array_stride: 8,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &[VertexAttribute {
+                        format: wgpu::VertexFormat::Float32x2,
+                        offset: 0,
+                        shader_location: 0,
+                    }],
+                })],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -102,6 +100,7 @@ impl State {
             queue,
             device,
             render_pipeline,
+            buffer,
         })
     }
     pub fn redraw(&self) {
@@ -138,6 +137,7 @@ impl State {
                 ..Default::default()
             });
             pass.set_pipeline(&self.render_pipeline);
+            pass.set_vertex_buffer(0, self.buffer.slice(..));
             pass.draw(0..6, 0..1);
         }
 

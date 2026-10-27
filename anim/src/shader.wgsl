@@ -4,18 +4,7 @@ struct VertexOutput {
 };
 
 @vertex
-fn vs_main(@builtin(vertex_index) idx: u32) -> VertexOutput {
-    var positions = array<vec2<f32>, 3>(
-        vec2(0.0, 1.0),
-        vec2(1.0, 0.0),
-        vec2(0.0, -1.0),
-    );
-    var pos_b = array<vec2<f32>, 3>(
-        vec2(0.0, -1.0),
-        vec2(-1.0, 0.0),
-        vec2(0.0, 1.0),
-    );
-
+fn vs_main(@location(0) position: vec2f, @builtin(vertex_index) idx: u32) -> VertexOutput {
     var color = array<vec4f, 3>(
         vec4f(1, 0, 0, 1),
         vec4f(0, 1, 0, 1),
@@ -24,7 +13,7 @@ fn vs_main(@builtin(vertex_index) idx: u32) -> VertexOutput {
 
     var result: VertexOutput;
 
-    result.position = vec4f(select(positions[idx], pos_b[idx % 3], idx > 2), 0.0, 1.0);
+    result.position = vec4f(position, 0.0, 1.0);
     result.color = select(color[0], color[1], idx > 2);
 
     return result;
