@@ -13,7 +13,10 @@ pub struct State {
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: RenderPipeline,
+
+    // FIXME move these somewhere else?
     buffer: Buffer,
+    index_buffer: Buffer,
 }
 
 impl State {
@@ -48,23 +51,22 @@ impl State {
             write_mask: wgpu::ColorWrites::ALL,
         })];
 
-        const vertex: [[f32; 2]; 6] = [
-            [0.0, 1.0],
-            [1.0, 0.0],
-            [0.0, -1.0],
-            [0.0, -1.0],
-            [-1.0, 0.0],
-            [0.0, 1.0],
-        ];
+        let rad = 1.0;
+        let vertex: [[f32; 2]; 4] = [[0.0, rad], [rad, 0.0], [0.0, -rad], [-rad, 0.0]];
+
+        let index_bytes = bytemuck::cast_slice::<u16, u8>(&[0, 1, 2, 2, 3, 0]);
         let bytes = bytemuck::cast_slice::<[f32; 2], u8>(&vertex);
 
-        // device.create_buffer_init(&wgpu::BufferInitDescriptor { label: "as" });
-        let desc = &BufferInitDescriptor {
+        let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("vertices"),
             contents: bytes,
             usage: wgpu::BufferUsages::VERTEX,
-        };
-        let buffer = device.create_buffer_init(desc);
+        });
+        let index_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("indices"),
+            contents: index_bytes,
+            usage: wgpu::BufferUsages::INDEX,
+        });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pipeline"),
@@ -101,6 +103,7 @@ impl State {
             device,
             render_pipeline,
             buffer,
+            index_buffer,
         })
     }
     pub fn redraw(&self) {
@@ -138,7 +141,9 @@ impl State {
             });
             pass.set_pipeline(&self.render_pipeline);
             pass.set_vertex_buffer(0, self.buffer.slice(..));
-            pass.draw(0..6, 0..1);
+            pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            // pass.draw(0..6, 0..1);
+            pass.draw_indexed(0..6, 0, 0..1);
         }
 
         self.queue.submit([encoder.finish()]);
