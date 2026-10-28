@@ -52,10 +52,15 @@ impl State {
         })];
 
         let rad = 1.0;
-        let vertex: [[f32; 2]; 4] = [[0.0, rad], [rad, 0.0], [0.0, -rad], [-rad, 0.0]];
+        let vertex: [[f32; 3]; 4] = [
+            [0.0, rad, 0.0],
+            [rad, 0.0, 0.0],
+            [0.0, -rad, 0.0],
+            [-rad, 0.0, 0.0],
+        ];
 
         let index_bytes = bytemuck::cast_slice::<u16, u8>(&[0, 1, 2, 2, 3, 0]);
-        let bytes = bytemuck::cast_slice::<[f32; 2], u8>(&vertex);
+        let bytes = bytemuck::cast_slice::<[f32; 3], u8>(&vertex);
 
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("vertices"),
@@ -75,10 +80,10 @@ impl State {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[Some(VertexBufferLayout {
-                    array_stride: 8,
+                    array_stride: 12,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &[VertexAttribute {
-                        format: wgpu::VertexFormat::Float32x2,
+                        format: wgpu::VertexFormat::Float32x3,
                         offset: 0,
                         shader_location: 0,
                     }],
