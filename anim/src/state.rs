@@ -17,6 +17,11 @@ pub struct State {
     // FIXME move these somewhere else?
     buffer: Buffer,
     index_buffer: Buffer,
+
+    uniform_buffer: Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+    start_time: std::time::Instant,
+    window: Arc<Window>,
 }
 
 impl State {
@@ -43,15 +48,13 @@ impl State {
 
         surface.configure(&device, &config);
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor::default());
         let targets = &[Some(wgpu::ColorTargetState {
             format: config.format, // needs to match your surface
             blend: Some(wgpu::BlendState::REPLACE),
             write_mask: wgpu::ColorWrites::ALL,
         })];
 
-        let rad = 1.0;
+        let rad = 0.5;
         let vertex: [[f32; 3]; 4] = [
             [0.0, rad, 0.0],
             [rad, 0.0, 0.0],
@@ -72,6 +75,41 @@ impl State {
             contents: index_bytes,
             usage: wgpu::BufferUsages::INDEX,
         });
+        let uniform_buffer = device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("uniform"),
+            contents: bytemuck::cast_slice(&[0.0_f32]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let uniform_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("rotation layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("bind group"),
+            layout: &uniform_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+        });
+
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("render pipeline layout"),
+                bind_group_layouts: &[Some(&uniform_layout)],
+                ..Default::default()
+            });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pipeline"),
@@ -109,6 +147,11 @@ impl State {
             render_pipeline,
             buffer,
             index_buffer,
+
+            uniform_buffer,
+            uniform_bind_group,
+            start_time: std::time::Instant::now(),
+            window,
         })
     }
     pub fn redraw(&self) {
@@ -144,14 +187,22 @@ impl State {
                 color_attachments: &[attatchment],
                 ..Default::default()
             });
+
+            let theta = self.start_time.elapsed().as_secs_f32() * 2.0;
+
+            self.queue
+                .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[theta]));
+
             pass.set_pipeline(&self.render_pipeline);
             pass.set_vertex_buffer(0, self.buffer.slice(..));
             pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             // pass.draw(0..6, 0..1);
             pass.draw_indexed(0..6, 0, 0..1);
         }
 
         self.queue.submit([encoder.finish()]);
         self.queue.present(texture);
+        self.window.request_redraw();
     }
 }
