@@ -54,15 +54,26 @@ impl State {
             write_mask: wgpu::ColorWrites::ALL,
         })];
 
-        let rad = 0.5;
-        let vertex: [[f32; 3]; 4] = [
-            [0.0, rad, 0.0],
-            [rad, 0.0, 0.0],
-            [0.0, -rad, 0.0],
-            [-rad, 0.0, 0.0],
+        let r = 0.5;
+        let vertex: [[f32; 3]; 8] = [
+            [r, r, r],    // 0
+            [r, -r, r],   // 1
+            [-r, -r, r],  // 2
+            [-r, r, r],   // 3
+            [r, r, -r],   // 4
+            [r, -r, -r],  // 5
+            [-r, -r, -r], // 6
+            [-r, r, -r],  // 7
         ];
 
-        let index_bytes = bytemuck::cast_slice::<u16, u8>(&[0, 1, 2, 2, 3, 0]);
+        let index_bytes = bytemuck::cast_slice::<u16, u8>(&[
+            0, 1, 2, 2, 3, 0, // xy
+            4, 5, 6, 6, 7, 4, // -xy
+            0, 4, 7, 7, 3, 0, // xz
+            1, 5, 6, 6, 2, 1, // -xz
+            0, 4, 5, 5, 1, 0, // yz
+            3, 7, 6, 6, 2, 3, // -yz
+        ]);
         let bytes = bytemuck::cast_slice::<[f32; 3], u8>(&vertex);
 
         let buffer = device.create_buffer_init(&BufferInitDescriptor {
@@ -188,17 +199,17 @@ impl State {
                 ..Default::default()
             });
 
-            let theta = self.start_time.elapsed().as_secs_f32() * 2.0;
+            // let theta = self.start_time.elapsed().as_secs_f32() * 2.0;
 
-            self.queue
-                .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[theta]));
+            // self.queue
+            //     .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[theta]));
 
             pass.set_pipeline(&self.render_pipeline);
             pass.set_vertex_buffer(0, self.buffer.slice(..));
             pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             pass.set_bind_group(0, &self.uniform_bind_group, &[]);
             // pass.draw(0..6, 0..1);
-            pass.draw_indexed(0..6, 0, 0..1);
+            pass.draw_indexed(0..36, 0, 0..1);
         }
 
         self.queue.submit([encoder.finish()]);
