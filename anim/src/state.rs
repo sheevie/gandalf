@@ -199,10 +199,10 @@ impl State {
                 ..Default::default()
             });
 
-            // let theta = self.start_time.elapsed().as_secs_f32() * 2.0;
+            let theta = self.start_time.elapsed().as_secs_f32() * 2.0;
 
-            // self.queue
-            //     .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[theta]));
+            self.queue
+                .write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[theta]));
 
             pass.set_pipeline(&self.render_pipeline);
             pass.set_vertex_buffer(0, self.buffer.slice(..));
