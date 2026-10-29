@@ -7,9 +7,9 @@ fn vs_main(@location(0) position: vec3f) -> @builtin(position) vec4f{
     let c = cos(theta);
     
     let rotated = vec3f(
-        c * position.x + s * position.z + s * 0.1,
-        position.y + c * 0.1,
-        -s * position.x + c * position.z
+        position.x + c * 0.1,
+        c * position.y + s * position.z + s * 0.1,
+        -s * position.y + c * position.z
 
     );
     return vec4f(rotated.xy, rotated.z * 0.5 + 0.5, 1.0);
